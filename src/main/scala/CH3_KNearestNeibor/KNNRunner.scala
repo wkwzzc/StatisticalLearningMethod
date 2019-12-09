@@ -1,6 +1,6 @@
 package CH3_KNearestNeibor
 
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.SparkSession
 
 /**
   * Created by WZZC on 2019/11/29
@@ -16,20 +16,14 @@ object KNNRunner {
       .getOrCreate()
 
     val iris = spark.read
+//      .format("csv")
       .option("inferSchema", true)
       .option("header", true)
       .csv("F:\\DataSource\\iris.csv")
-//      .repartition(2)
 
-    val model =   KnnModel(iris, "class")
+    val model = KnnModel(iris, "class")
 
-    val frame  = model.kdtrees
-
-    frame .foreach(println)
-
-    model.predict(iris,3).show(100)
-
-//    frame.foreach(x=>println(x.value))
+    model.predict(iris, 3).show(100)
 
     spark.stop()
 

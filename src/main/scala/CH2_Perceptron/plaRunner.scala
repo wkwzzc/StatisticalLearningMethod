@@ -18,9 +18,10 @@ object plaRunner {
       .getOrCreate()
 
     val data = spark.read
+      .format("csv")
       .option("inferSchema", true)
       .option("header", true)
-      .csv("F:\\DataSource\\pla.csv")
+      .csv("data/pla.csv")
 
     val perceptron = PerceptronModel(data, "lable", 0.2)
 

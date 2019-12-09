@@ -1,27 +1,18 @@
 package CH3_KNearestNeibor
 
-import java.util.UUID
-
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.DenseVector
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StringType, StructType}
 import staticlearn.DataUtils.distanceUtils.euclidean
-
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by WZZC on 2019/11/29
   **/
 case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
 
-  private val spark: SparkSession = data.sparkSession
+  private val spark = data.sparkSession
   import spark.implicits._
-
-  // DataFrame的Schema信息
-  private val schema: StructType = data.schema
 
   // 使用.rdd的时候不能使用 col
 //  private val sfadsfaggaggsagafasavsa: String = UUID.randomUUID().toString
@@ -29,8 +20,7 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
 //  println(sfadsfaggaggsagafasavsa)
 
   // 数据特征名称
-  private val fts: Array[String] =
-    schema.filterNot(_.name == labelName).map(_.name).toArray
+  private val fts: Array[String] = data.columns.filterNot(_ == labelName)
 
   val shapes: Int = fts.length
 
@@ -46,14 +36,17 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
       .setInputCols(fts)
       .setOutputCol("sfadsfaggaggsagafasavsa")
       .transform(dataFrame)
-      .withColumn("sfadsfaggaggsagafasavsa", vec2Seq($"sfadsfaggaggsagafasavsa"))
+      .withColumn(
+        "sfadsfaggaggsagafasavsa",
+        vec2Seq($"sfadsfaggaggsagafasavsa")
+      )
 
   }
 
-  val kdtrees = dataTransForm(data)
+  private val kdtrees = dataTransForm(data)
     .select(labelName, "sfadsfaggaggsagafasavsa")
     .withColumn("partitionIn", spark_partition_id())
-    .rdd //在大数据情况下，分区构建
+    .rdd //在大数据情况下，分区构建kdtree
     .map(row => {
       val partitionIn = row.getInt(2)
       val label = row.getString(0)
@@ -65,8 +58,6 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
     .mapValues(nn => creatKdTree(nn, 0, shapes))
     .values
     .collect()
-
-  def seq2String(a: Seq[Double], k: Int) = a.mkString(",")
 
   /**
     *

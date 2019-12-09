@@ -21,8 +21,6 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
   private val sc = spark.sparkContext
   import spark.implicits._
 
-  // DataFrame的Schema信息
-  private val schema: StructType = data.schema
 
   private val labelCol: Column = new Column(label) with Serializable
 
@@ -30,7 +28,7 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
   private val featuresCol = new Column(featuresName) with Serializable
 
   // 数据特征名称
-  val fts: Array[String] = schema.filterNot(_.name == labelCol.toString()).map(_.name).toArray
+  val fts: Array[String] = data.columns.filterNot(_  == label)
 
   // UDF  DenseVector -> Array
   def vec2Array = udf((vec: DenseVector) => vec.toArray)
