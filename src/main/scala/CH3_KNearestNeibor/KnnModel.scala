@@ -4,8 +4,7 @@ import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
-import staticlearn.DataUtils.distanceUtils.euclidean
-
+import statisticslearn.DataUtils.distanceUtils._
 /**
   * Created by WZZC on 2019/11/29
   **/

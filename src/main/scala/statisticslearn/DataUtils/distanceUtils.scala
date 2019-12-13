@@ -1,4 +1,4 @@
-package staticlearn.DataUtils
+package statisticslearn.DataUtils
 
 import breeze.linalg.DenseVector
 
