@@ -1,10 +1,6 @@
 package CH6_LogisticsRegression
-import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions._
-import breeze.linalg.{DenseVector => densevector}
-import org.apache.spark.ml.linalg.{Vector, Vectors}
-import org.apache.spark.ml.stat.Summarizer.{mean => summaryMean}
+
+import org.apache.spark.sql.SparkSession
 
 /**
   * Created by WZZC on 2019/12/9
@@ -18,14 +14,14 @@ object lrRunner {
       .master("local[*]")
       .getOrCreate()
 
-    import spark.implicits._
 
     val iris = spark.read
       .option("header", true)
       .option("inferSchema", true)
       .csv("F:\\DataSource\\iris2.csv")
 
-    val model =   LRModel(iris,"class")
+
+    val model = LRModel(iris, "class")
 
     model.predict(iris).show(100)
 

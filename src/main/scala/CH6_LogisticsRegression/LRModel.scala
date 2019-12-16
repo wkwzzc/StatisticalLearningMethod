@@ -62,9 +62,8 @@ case class LRModel(data: DataFrame,
   // 预测
   def predictUdf(w: densevector[Double]) =
     udf((ftsVal: Vector) => {
-      val d = w.dot(densevector(ftsVal.toArray))
+      val d: Double = w.dot(densevector(ftsVal.toArray))
       if (d >= 0) 1.0 else 0.0
-//      d
     })
 
   private def fit = {
@@ -108,6 +107,7 @@ case class LRModel(data: DataFrame,
 
     (initW, currentLoss)
   }
+
 
   private val w: densevector[Double] = fit._1
 
