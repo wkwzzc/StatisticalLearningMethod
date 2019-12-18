@@ -1,7 +1,6 @@
 package CH5_DecisionTree
 
-import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.sql.functions.{col, count, log2, sum}
+ import org.apache.spark.sql.functions.{col, count, log2, sum}
 import org.apache.spark.sql.types.{DoubleType, StringType, StructField}
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row}
 
@@ -46,7 +45,7 @@ case class DecisionTreeModel(data: DataFrame,
 
     val ftsCount: Dataset[Row] = df
       .flatMap(row => {
-        val label = row.getAs[String]("label")
+        val label = row.getAs[String](labelColName)
         (0 until row.length).map(i => {
           (label, ftSchemas(i), row.getString(i))
         })

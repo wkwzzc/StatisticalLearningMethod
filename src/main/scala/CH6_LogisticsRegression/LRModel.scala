@@ -1,6 +1,6 @@
 package CH6_LogisticsRegression
 
-import org.apache.spark.sql.functions.{mean, udf}
+import org.apache.spark.sql.functions.{col, mean, udf}
 import org.apache.spark.ml.feature.{
   IndexToString,
   StringIndexer,
@@ -11,6 +11,9 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import breeze.linalg.{DenseVector => densevector}
 import org.apache.spark.ml.linalg.{Vector, Vectors}
 import org.apache.spark.ml.stat.Summarizer.{mean => summaryMean}
+import org.apache.spark.ml.util.Identifiable
+
+import scala.beans.BeanProperty
 
 /**
   * Created by WZZC on 2019/12/9
@@ -25,17 +28,20 @@ case class LRModel(data: DataFrame,
   private val spark: SparkSession = data.sparkSession
   import spark.implicits._
 
-  val fts: Array[String] = data.columns.filterNot(_ == labelColName)
+  @BeanProperty var fts: Array[String] = _
+
+  private val ftsName: String = Identifiable.randomUID("LRModel")
+  private val indexedLabel: String = Identifiable.randomUID("indexedLabel")
 
   private val stringIndexer: StringIndexerModel = new StringIndexer()
     .setInputCol(labelColName)
-    .setOutputCol("indexedLabel")
+    .setOutputCol(indexedLabel)
     .fit(data)
 
-  def ftsTrans(df: DataFrame) = {
+  def dataTransForm(df: DataFrame) = {
     new VectorAssembler()
       .setInputCols(fts)
-      .setOutputCol("ftsVector")
+      .setOutputCol(ftsName)
       .transform(data)
   }
 
@@ -75,15 +81,15 @@ case class LRModel(data: DataFrame,
     while (change > error & i < itr) {
       //创建一个初始化的随机向量作为初始权值向量
 
-      val vecDf: DataFrame = ftsTrans(this.data)
+      val vecDf: DataFrame = dataTransForm(this.data)
       val sigmoidDf = stringIndexer
         .transform(vecDf)
-        .select("ftsVector", "indexedLabel")
-        .withColumn("sigmoid", sigmoidUdf(initW)($"ftsVector"))
+        .select(ftsName, indexedLabel)
+        .withColumn("sigmoid", sigmoidUdf(initW)(col(ftsName)))
         .cache()
 
       val loss = sigmoidDf
-        .select(lossUdf($"sigmoid", $"indexedLabel") as "loss")
+        .select(lossUdf($"sigmoid", col(indexedLabel)) as "loss")
         .agg(mean($"loss"))
         .head
         .getDouble(0)
@@ -93,7 +99,7 @@ case class LRModel(data: DataFrame,
 
       val gdVector: Vector = sigmoidDf
         .select(
-          gradientDescentUdf($"ftsVector", $"indexedLabel", $"sigmoid") as "gd"
+          gradientDescentUdf(col(ftsName), col(indexedLabel), $"sigmoid") as "gd"
         )
         .agg(summaryMean($"gd") as "gd")
         .head
@@ -108,22 +114,21 @@ case class LRModel(data: DataFrame,
     (initW, currentLoss)
   }
 
+  private def w: densevector[Double] = fit._1
 
-  private val w: densevector[Double] = fit._1
-
-  def predict(df: DataFrame) = {
+  def predict(df: DataFrame): DataFrame = {
     val labelConverter = new IndexToString()
       .setInputCol("prediction")
       .setOutputCol("predictedLabel")
       .setLabels(stringIndexer.labels)
 
-    val vecDf: DataFrame = ftsTrans(df)
+    val vecDf: DataFrame = dataTransForm(df)
 
-    val preDf = vecDf.withColumn("prediction", predictUdf(w)($"ftsVector"))
+    val preDf = vecDf.withColumn("prediction", predictUdf(w)(col(ftsName)))
 
     labelConverter
       .transform(preDf)
-      .drop("ftsVector", "prediction")
+      .drop(ftsName, "prediction")
   }
 
 }

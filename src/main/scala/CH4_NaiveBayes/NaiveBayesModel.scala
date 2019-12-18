@@ -7,9 +7,10 @@ import org.apache.spark.ml.stat.Summarizer.{
   mean => summaryMean,
   variance => summaryVar
 }
-import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.expressions.UserDefinedFunction
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.functions.udf
 
 /**
   * Created by WZZC on 2019/12/10
@@ -19,8 +20,8 @@ case class NaiveBayesModel(data: DataFrame, labelColName: String) {
   private val spark: SparkSession = data.sparkSession
   import spark.implicits._
 
-  private val labelColumn: Column = col(labelColName)
-  private val fts: Array[String] = data.columns.filterNot(_ != labelColName)
+  private val fts: Array[String] = data.columns.filterNot(_ == labelColName)
+  private val ftsName: String = Identifiable.randomUID("NaiveBayesModel")
 
   /**
     * 数据特征转换
@@ -31,25 +32,23 @@ case class NaiveBayesModel(data: DataFrame, labelColName: String) {
   def dataTransForm(dataFrame: DataFrame) = {
     new VectorAssembler()
       .setInputCols(fts)
-      .setOutputCol("features")
+      .setOutputCol(ftsName)
       .transform(dataFrame)
   }
 
   /**
-    *  计算先验概率
-    *
-    * @return
+    * @return 计算先验概率
     */
-  def priorProb = {
+  private val priorProb: Map[String, Double] = {
     val rolluped: DataFrame = data.rollup(labelColName).count()
 
     // 样本量
     val sampleSize: Long =
-      rolluped.where(labelColumn.isNull).head.getAs[Long](1)
+      rolluped.where(col(labelColName).isNull).head.getAs[Long](1)
 
     // 计算先验概率
     val priorProbMap: Map[String, Double] = rolluped
-      .where(labelColumn.isNotNull)
+      .where(col(labelColName).isNotNull)
       .withColumn("pprob", $"count" / sampleSize)
       .collect()
       .map(row => {
@@ -61,18 +60,14 @@ case class NaiveBayesModel(data: DataFrame, labelColName: String) {
 
   }
 
-  /**
-    *  计算条件概率
-    *
-    * @return
-    */
-  def condProb = {
+  private val condProb: Array[(Array[(Double, Double)], String)] = {
     dataTransForm(data)
-      .groupBy(labelColumn)
+      .select(labelColName, ftsName)
+      .groupBy(labelColName)
       // 聚合计算：计算特征的均值向量和方差向量
       .agg(
-        summaryMean($"features") as "mfts",
-        summaryVar($"features") as "vfts"
+        summaryMean(col(ftsName)) as "mfts",
+        summaryVar(col(ftsName)) as "vfts"
       )
       .collect()
       .map(row => {
@@ -96,19 +91,28 @@ case class NaiveBayesModel(data: DataFrame, labelColName: String) {
   }
 
   // 预测UDF
-  private val predictUDF = udf((vec: DenseVector) => {
+  private val predictUDF: UserDefinedFunction = udf((vec: DenseVector) => {
     condProb
       .map(tp => {
         val tuples = tp._1.zip(vec.toArray)
         val cp: Double = tuples.map {
           case ((mu, sigma), x) => pdf(x, mu, sigma)
         }.product
+
         val pprob: Double = priorProb.getOrElse(tp._2, 0)
+
         (cp * pprob, tp._2)
       })
       .maxBy(_._1)
       ._2
   })
 
-  def predict(df: DataFrame) = {}
+  def predict(df: DataFrame):DataFrame = {
+
+    val ftsDf = dataTransForm(df)
+
+    ftsDf.withColumn(labelColName, predictUDF(col(ftsName)))
+
+  }
+
 }

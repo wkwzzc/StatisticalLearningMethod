@@ -1,6 +1,6 @@
 package CH5_DecisionTree
 
- import org.apache.spark.sql._
+import org.apache.spark.sql._
 
 /**
   * Created by WZZC on 2019/8/23
@@ -20,7 +20,7 @@ object ID3Ruuner {
       .option("header", true)
       .csv("F:\\DataSource\\ID3\\data2.txt")
 
-    val model = new DecisionTreeModel(df, "label")
+    val model: DecisionTreeModel = DecisionTreeModel(df, "label")
 
     model.predict(df).show()
 

@@ -1,32 +1,33 @@
-package CH3_KNearestNeibor
+package CH4_NaiveBayes
 
 import org.apache.spark.sql.SparkSession
 
+
 /**
-  * Created by WZZC on 2019/11/29
+  * Created by WZZC on 2019/4/27
   **/
-object KNNRunner {
+object NaiveBayesRunner {
 
   def main(args: Array[String]): Unit = {
-
     val spark = SparkSession
       .builder()
       .appName(s"${this.getClass.getSimpleName}")
       .master("local[*]")
       .getOrCreate()
 
-    val iris = spark.read
-//      .format("csv")
-      .option("inferSchema", true)
+
+    // 数据加载
+    val irisData = spark.read
       .option("header", true)
+      .option("inferSchema", true)
       .csv("F:\\DataSource\\iris.csv")
 
-    val model: KnnModel = KnnModel(iris, "class")
 
-    model.predict(iris, 3).show(100)
+    val model = NaiveBayesModel(irisData, "class")
+
+    model.predict(irisData).show()
 
     spark.stop()
-
   }
 
 }

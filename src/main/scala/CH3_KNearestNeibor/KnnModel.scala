@@ -2,21 +2,22 @@ package CH3_KNearestNeibor
 
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.DenseVector
+import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
 import statisticslearn.DataUtils.distanceUtils._
+
 /**
   * Created by WZZC on 2019/11/29
   **/
 case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
 
   private val spark = data.sparkSession
-  import spark.implicits._
 
+//  import spark.implicits._
   // 使用.rdd的时候不能使用 col
 //  private val sfadsfaggaggsagafasavsa: String = UUID.randomUUID().toString
-//  private val featuresCol =   col(sfadsfaggaggsagafasavsa)
-//  println(sfadsfaggaggsagafasavsa)
+  private val ftsName: String = Identifiable.randomUID("KnnModel")
 
   // 数据特征名称
   private val fts: Array[String] = data.columns.filterNot(_ == labelName)
@@ -33,17 +34,13 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
   def dataTransForm(dataFrame: DataFrame) = {
     new VectorAssembler()
       .setInputCols(fts)
-      .setOutputCol("sfadsfaggaggsagafasavsa")
+      .setOutputCol(ftsName)
       .transform(dataFrame)
-      .withColumn(
-        "sfadsfaggaggsagafasavsa",
-        vec2Seq($"sfadsfaggaggsagafasavsa")
-      )
-
   }
 
-  private val kdtrees = dataTransForm(data)
-    .select(labelName, "sfadsfaggaggsagafasavsa")
+  private val kdtrees: Array[TreeNode] = dataTransForm(data)
+    .withColumn(ftsName, vec2Seq(col(ftsName)))
+    .select(labelName, ftsName)
     .withColumn("partitionIn", spark_partition_id())
     .rdd //在大数据情况下，分区构建kdtree
     .map(row => {
@@ -70,8 +67,9 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
     def nsearchUdf = udf((seq: Seq[Double]) => predict(seq, k))
 
     dataTransForm(predictDf)
-      .withColumn("labelName", nsearchUdf($"sfadsfaggaggsagafasavsa"))
-      .drop("sfadsfaggaggsagafasavsa")
+      .withColumn(ftsName, vec2Seq(col(ftsName)))
+      .withColumn(labelName, nsearchUdf(col(ftsName)))
+      .drop(ftsName)
 
   }
 
@@ -157,7 +155,7 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
     * @param k
     * @return
     */
-  def knn(treeNode: TreeNode, data: Seq[Double], k: Int) = {
+  def knn(treeNode: TreeNode, data: Seq[Double], k: Int = 1) = {
 
 //    implicit def vec2Seq(a:DenseVector[Double])=a.toArray.toSeq
 
