@@ -25,7 +25,7 @@ object NaiveBayesRunner {
 
     val model = NaiveBayesModel(irisData, "class")
 
-    model.predict(irisData).show()
+    model.predict(irisData).show(200)
 
     spark.stop()
   }

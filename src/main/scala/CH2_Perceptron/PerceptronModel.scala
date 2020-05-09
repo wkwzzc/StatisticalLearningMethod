@@ -1,13 +1,15 @@
 package CH2_Perceptron
 
 import java.util.UUID
+
 import breeze.linalg.{DenseVector => densevector}
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{row_number, udf, col}
+import org.apache.spark.sql.functions.{col, row_number, udf}
 import org.apache.spark.sql.types.{IntegerType, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import statisticslearn.DataUtils.udfFuns
 
 import scala.util.Random
 
@@ -21,17 +23,13 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
   private val sc = spark.sparkContext
   import spark.implicits._
 
-
   private val labelCol: Column = new Column(label) with Serializable
 
   private val featuresName: String = UUID.randomUUID().toString
   private val featuresCol = new Column(featuresName) with Serializable
 
   // 数据特征名称
-  val fts: Array[String] = data.columns.filterNot(_  == label)
-
-  // UDF  DenseVector -> Array
-  def vec2Array = udf((vec: DenseVector) => vec.toArray)
+  val fts: Array[String] = data.columns.filterNot(_ == label)
 
   // 定义判定函数
   def signudf(w: densevector[Double], b: Double) =
@@ -42,6 +40,12 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
       ny
     })
 
+  /**
+    * 数据转换
+    *
+    * @param dataFrame
+    * @return
+    */
   def dataTransForm(dataFrame: DataFrame) = {
     val amountVectorAssembler: VectorAssembler = new VectorAssembler()
       .setInputCols(fts)
@@ -49,7 +53,7 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
 
     amountVectorAssembler
       .transform(dataFrame)
-      .withColumn(featuresName, vec2Array(featuresCol))
+      .withColumn(featuresName, udfFuns.vec2Array(featuresCol))
 
   }
 
@@ -58,10 +62,11 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
     *
     * @return
     */
-  def plaFit = {
+  def fit = {
 
     val dataFeatrus: DataFrame = dataTransForm(this.data)
       .select(labelCol, featuresCol)
+
     //创建一个初始化的随机向量作为初始权值向量
     var initW: densevector[Double] = densevector.rand[Double](fts.length)
     // 初始偏置
@@ -77,7 +82,9 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
     while (flag) {
       val df =
         dataFeatrus.withColumn("sign", signudf(initW, initb)(featuresCol))
+
       val loss = df.where($"sign" =!= labelCol)
+
       val count: Long = loss.count()
 
       if (count == 0) {
@@ -98,6 +105,7 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
 
         val y = randy.getAs[Int](labelCol.toString())
 
+        // 更新 w 和 b
         initW = initW + densevector(
           randy.getAs[Seq[Double]](featuresName).toArray
         ).map(_ * y * lrate)

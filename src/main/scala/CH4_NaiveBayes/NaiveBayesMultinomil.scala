@@ -38,10 +38,11 @@ object NaiveBayesMultinomil {
     // 数据格式变换
     val flattenDF = mnistTrain
       .flatMap(row => {
-        val label = row.getInt(0)
-        (1 until row.length).map(i => {
+        val label: Int = row.getInt(0)
+        val tuples = (1 until row.length).map(i => {
           (label, ftSchemas(i - 1), row.getInt(i))
         })
+        tuples
       })
       .toDF("label", "ftsName", "ftsValue")
 
@@ -51,11 +52,9 @@ object NaiveBayesMultinomil {
       .agg(count($"ftsValue") as "ftsFreq")
       .persist()
 
-
     val ftsLevels = grouped
       .groupBy($"ftsName")
       .agg(countDistinct($"ftsValue") as "ftsLevels")
-
 
     val labelLevels = grouped
       .where($"ftsName" === ftSchemas.head)

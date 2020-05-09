@@ -107,11 +107,14 @@ case class NaiveBayesModel(data: DataFrame, labelColName: String) {
       ._2
   })
 
-  def predict(df: DataFrame):DataFrame = {
+  def predict(df: DataFrame): DataFrame = {
 
-    val ftsDf = dataTransForm(df)
+    val ftsDf: DataFrame = dataTransForm(df)
+
+    ftsDf.printSchema()
 
     ftsDf.withColumn(labelColName, predictUDF(col(ftsName)))
+      .drop(ftsName)
 
   }
 

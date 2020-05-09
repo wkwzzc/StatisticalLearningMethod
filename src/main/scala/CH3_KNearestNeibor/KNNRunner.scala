@@ -16,7 +16,6 @@ object KNNRunner {
       .getOrCreate()
 
     val iris = spark.read
-//      .format("csv")
       .option("inferSchema", true)
       .option("header", true)
       .csv("F:\\DataSource\\iris.csv")

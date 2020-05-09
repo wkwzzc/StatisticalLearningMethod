@@ -53,6 +53,7 @@ case class LRModel(data: DataFrame,
       val d = initW.dot(densevector(ftsVal.toArray))
       sigmoid(d)
     })
+  
 
   // 计算损失函数
   def lossUdf =

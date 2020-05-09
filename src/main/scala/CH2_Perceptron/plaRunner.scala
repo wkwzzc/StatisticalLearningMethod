@@ -21,16 +21,18 @@ object plaRunner {
       .format("csv")
       .option("inferSchema", true)
       .option("header", true)
-      .csv("data/pla.csv")
+      .csv("G:\\wk_project\\StatisticalLearningMethod\\src\\main\\resources\\data\\pla.csv")
 
     val perceptron = PerceptronModel(data, "lable", 0.2)
 
-    val fit: (DenseVector[Double], Double) = perceptron.plaFit
-    perceptron.predict(data, fit._1, fit._2).show(data.count().toInt)
+    val fit: (DenseVector[Double], Double) = perceptron.fit
 
+    perceptron.predict(data, fit._1, fit._2).show()
+
+    //  pocketPla
     val fit2: (DenseVector[Double], Double, Double) =
       perceptron.pocketPlaFit(100)
-    perceptron.predict(data, fit2._1, fit2._2).show(data.count().toInt)
+    perceptron.predict(data, fit2._1, fit2._2).show( )
 
     spark.stop()
   }
