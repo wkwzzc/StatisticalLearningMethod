@@ -21,7 +21,7 @@ object plaRunner {
       .format("csv")
       .option("inferSchema", true)
       .option("header", true)
-      .csv("G:\\wk_project\\StatisticalLearningMethod\\src\\main\\resources\\data\\pla.csv")
+      .csv("data/pla.csv")
 
     val perceptron = PerceptronModel(data, "lable", 0.2)
 

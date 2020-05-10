@@ -39,7 +39,8 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
       .transform(dataFrame)
   }
 
-  private val kdtrees: Array[TreeNode] = dataTransForm(data)
+  private val
+  kdtrees: Array[TreeNode] = dataTransForm(data)
     .withColumn(ftsName, vec2Seq(col(ftsName)))
     .select(labelName, ftsName)
     .withColumn("partitionIn", spark_partition_id())

@@ -18,7 +18,7 @@ object KNNRunner {
     val iris = spark.read
       .option("inferSchema", true)
       .option("header", true)
-      .csv("F:\\DataSource\\iris.csv")
+      .csv("data/iris.csv")
 
     val model: KnnModel = KnnModel(iris, "class")
 
