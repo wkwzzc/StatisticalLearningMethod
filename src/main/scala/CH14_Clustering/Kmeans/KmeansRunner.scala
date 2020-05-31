@@ -19,7 +19,8 @@ object KmeansRunner {
       .csv("F:\\DataSource\\iris2.csv")
       .drop("class")
 
-    val model = KmeansModel(iris, 2)
+    val model = KmeansModel(iris )
+    model.setK(2)
     model.setFts(iris.columns.filterNot(_ == "class"))
 
     val res: DataFrame = model.fit

@@ -18,17 +18,18 @@ import scala.beans.BeanProperty
 /**
   * Created by WZZC on 2019/12/9
   **/
-case class LRModel(data: DataFrame,
-                   labelColName: String,
-                   var itr: Int = 40, //迭代次数
-                   var lrate: Double = 0.05, //学习率
-                   var error: Double = 1e-3 // 初始化差值
-) {
+case class LRModel(data: DataFrame) {
 
   private val spark: SparkSession = data.sparkSession
   import spark.implicits._
 
+  @BeanProperty var itr: Int = 40  //迭代次数
+  @BeanProperty var lrate: Double = 0.05  //学习率
+  @BeanProperty var error: Double = 1e-3 // 初始化差值
   @BeanProperty var fts: Array[String] = _
+  @BeanProperty var labelColName: String = _
+
+  var w: densevector[Double] = _
 
   private val ftsName: String = Identifiable.randomUID("LRModel")
   private val indexedLabel: String = Identifiable.randomUID("indexedLabel")
@@ -53,7 +54,6 @@ case class LRModel(data: DataFrame,
       val d = initW.dot(densevector(ftsVal.toArray))
       sigmoid(d)
     })
-  
 
   // 计算损失函数
   def lossUdf =
@@ -62,7 +62,7 @@ case class LRModel(data: DataFrame,
   // 计算梯度下降
   def gradientDescentUdf =
     udf((ftsVal: Vector, y: Double, sigmoid: Double) => {
-      val gd = ftsVal.toArray.map(_ * (sigmoid - y))
+      val gd: Array[Double] = ftsVal.toArray.map(_ * (sigmoid - y))
       Vectors.dense(gd)
     })
 
@@ -73,7 +73,7 @@ case class LRModel(data: DataFrame,
       if (d >= 0) 1.0 else 0.0
     })
 
-  private def fit = {
+  private def fitModel = {
     var currentLoss: Double = Double.MaxValue //当前损失函数最小值
     var change: Double = error + 0.1 // 梯度下降前后的损失函数的差值
     var i = 0 // 迭代次数
@@ -115,7 +115,7 @@ case class LRModel(data: DataFrame,
     (initW, currentLoss)
   }
 
-  private def w: densevector[Double] = fit._1
+  def fit = { w = fitModel._1 }
 
   def predict(df: DataFrame): DataFrame = {
     val labelConverter = new IndexToString()

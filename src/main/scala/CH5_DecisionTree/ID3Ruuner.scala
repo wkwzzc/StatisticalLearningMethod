@@ -18,9 +18,13 @@ object ID3Ruuner {
 
     val df: Dataset[Row] = spark.read
       .option("header", true)
-      .csv("F:\\DataSource\\ID3\\data2.txt")
+      .csv("data/ID3.csv")
 
-    val model: DecisionTreeModel = DecisionTreeModel(df, "label")
+    val model: DecisionTreeModel = DecisionTreeModel(df)
+
+    model.setLabelColName("label")
+    model.setThreshold(1e-2)
+    model.fit
 
     model.predict(df).show()
 

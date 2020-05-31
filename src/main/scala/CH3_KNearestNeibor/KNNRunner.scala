@@ -20,7 +20,8 @@ object KNNRunner {
       .option("header", true)
       .csv("data/iris.csv")
 
-    val model: KnnModel = KnnModel(iris, "class")
+    val model: KnnModel = KnnModel(iris)
+    model.setLabelName("class")
 
     model.predict(iris, 3).show(100)
 

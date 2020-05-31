@@ -32,11 +32,10 @@ object NaiveBayesRunner {
       .withColumn("x1", $"x1".cast(DoubleType))
       .withColumn("y", $"y".cast(DoubleType))
 
-    val bayes = MultinomilNaiveBayesModel(dataFrame, "y")
+    val bayes: MultinomilNaiveBayesModel = MultinomilNaiveBayesModel(dataFrame)
 
+    bayes.setLabelColName("y")
     bayes.setFts(Array("x1", "indexX2"))
-
-    bayes.fts.foreach(println)
     bayes.fit
 
     bayes.predict(dataFrame).show()

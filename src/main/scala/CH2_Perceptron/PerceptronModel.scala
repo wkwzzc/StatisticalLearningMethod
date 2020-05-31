@@ -4,32 +4,34 @@ import java.util.UUID
 
 import breeze.linalg.{DenseVector => densevector}
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{col, row_number, udf}
 import org.apache.spark.sql.types.{IntegerType, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import statisticslearn.DataUtils.udfFuns
 
+import scala.beans.BeanProperty
 import scala.util.Random
 
 /**
   * Created by WZZC on 2019/11/28
   **/
-case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
+case class PerceptronModel(data: DataFrame,
+                           @BeanProperty var lrate: Double = 0.2)
     extends Serializable {
 
   private val spark: SparkSession = data.sparkSession
   private val sc = spark.sparkContext
   import spark.implicits._
 
-  private val labelCol: Column = new Column(label) with Serializable
+  @BeanProperty var label: String = _
 
+  private val labelCol: Column = new Column(label) with Serializable
   private val featuresName: String = UUID.randomUUID().toString
   private val featuresCol = new Column(featuresName) with Serializable
 
   // 数据特征名称
-  val fts: Array[String] = data.columns.filterNot(_ == label)
+  @BeanProperty var fts: Array[String] = data.columns.filterNot(_ == label)
 
   // 定义判定函数
   def signudf(w: densevector[Double], b: Double) =
@@ -57,12 +59,15 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
 
   }
 
+  var W: densevector[Double] = _
+  var b: Double = _
+
   /**
     * PLA 模型拟合
     *
     * @return
     */
-  def fit = {
+  private def fitModel = {
 
     val dataFeatrus: DataFrame = dataTransForm(this.data)
       .select(labelCol, featuresCol)
@@ -117,6 +122,29 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
     (initW, initb)
   }
 
+  def fit = {
+    W = fitModel._1
+    b = fitModel._2
+  }
+
+
+  /**
+    *  PLA  预测
+    *
+    * @param predictDf
+    * @param w
+    * @param b
+    * @return
+    */
+  def predict(predictDf: DataFrame ) = {
+    val transFormed: DataFrame = dataTransForm(predictDf)
+    transFormed
+      .withColumn(label, signudf(W, b)(featuresCol))
+      .drop(featuresName)
+  }
+
+
+/*
   /**
     *  PlA 口袋算法，可以针对线性不可分的数据集构建感知机模型，但是准确率会下降
     *
@@ -182,20 +210,7 @@ case class PerceptronModel(data: DataFrame, label: String, lrate: Double)
     (resW, resB, countError.toDouble / allCount)
 
   }
+*/
 
-  /**
-    *  PLA  预测
-    *
-    * @param predictDf
-    * @param w
-    * @param b
-    * @return
-    */
-  def predict(predictDf: DataFrame, w: densevector[Double], b: Double) = {
-    val transFormed: DataFrame = dataTransForm(predictDf)
-    transFormed
-      .withColumn(label, signudf(w, b)(featuresCol))
-      .drop(featuresName)
-  }
 
 }

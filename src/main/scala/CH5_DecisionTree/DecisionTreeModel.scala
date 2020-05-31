@@ -1,18 +1,23 @@
 package CH5_DecisionTree
 
- import org.apache.spark.sql.functions.{col, count, log2, sum}
+import org.apache.spark.sql.functions.{col, count, log2, sum}
 import org.apache.spark.sql.types.{DoubleType, StringType, StructField}
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row}
+
+import scala.beans.BeanProperty
 
 /**
   * Created by WZZC on 2019/12/6
   **/
-case class DecisionTreeModel(data: DataFrame,
-                             labelColName: String,
-                             threshold: Double = 1e-2) {
+case class DecisionTreeModel(data: DataFrame) {
 
   private val spark = data.sparkSession
   import spark.implicits._
+
+  @BeanProperty var threshold: Double = 1e-2
+  @BeanProperty var labelColName: String = _
+  var node: DtreeNode = _
+  var search: List[String] = _
 
   /**
     *  获取实例数最大的类Ck
@@ -43,7 +48,8 @@ case class DecisionTreeModel(data: DataFrame,
                         labelCol: String,
                         ftSchemas: Array[String]) = {
 
-    val ftsCount: Dataset[Row] = df
+    // 数据格式转换，行转列
+    val ftsCount = df
       .flatMap(row => {
         val label = row.getAs[String](labelColName)
         (0 until row.length).map(i => {
@@ -57,7 +63,7 @@ case class DecisionTreeModel(data: DataFrame,
       .cache()
 
     //impiricalEntropy 经验熵
-    val preProbdf: Dataset[Row] = ftsCount
+    val preProbdf = ftsCount
       .where($"ftsName" === labelCol)
       .cache()
 
@@ -129,7 +135,7 @@ case class DecisionTreeModel(data: DataFrame,
     })
   }
 
-  private def fitModel(data: DataFrame) = {
+  def fit = {
 
     var searchList: List[String] = Nil
 
@@ -189,14 +195,11 @@ case class DecisionTreeModel(data: DataFrame,
 
     }
 
-    val node = creatTree(data)
+    node = creatTree(data)
 
-    val search = searchList.reverse.distinct
+    search = searchList.reverse.distinct
 
-    (node, search)
   }
-
-  private val fit: (DtreeNode, List[String]) = fitModel(this.data)
 
   /**
     *
@@ -216,7 +219,7 @@ case class DecisionTreeModel(data: DataFrame,
         }
 
       }
-      val res: String = finder(fit._1, fit._2)
+      val res: String = finder(node, search)
       Row.merge(row, Row(res))
     })
 

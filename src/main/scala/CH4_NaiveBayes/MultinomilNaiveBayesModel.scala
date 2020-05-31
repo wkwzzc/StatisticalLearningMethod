@@ -5,16 +5,17 @@ import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
-
 import scala.beans.BeanProperty
 import scala.collection.mutable
 
 /**
   * Created by WZZC on 2019/12/10
   **/
-case class MultinomilNaiveBayesModel(data: DataFrame, labelColName: String) {
+case class MultinomilNaiveBayesModel(data: DataFrame ) {
 
   private val spark: SparkSession = data.sparkSession
+
+  @BeanProperty var labelColName:String = _
   @BeanProperty var fts: Array[String] =
     data.columns.filterNot(_ == labelColName)
   private val ftsName: String = Identifiable.randomUID("NaiveBayesModel")

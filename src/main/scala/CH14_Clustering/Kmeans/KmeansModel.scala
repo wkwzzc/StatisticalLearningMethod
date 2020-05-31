@@ -12,16 +12,16 @@ import scala.beans.BeanProperty
 /**
   * Created by WZZC on 2019/12/17
   **/
-case class KmeansModel(data: DataFrame,
-                       k: Int,
-                       maxIter: Int = 40,
-                       tol: Double = 1e-4) {
+case class KmeansModel(data: DataFrame) {
+
+  @BeanProperty var maxIter: Int = 40
+  @BeanProperty var tol: Double = 1e-4
+  @BeanProperty var k: Int = _
+  @BeanProperty var fts: Array[String] = data.columns
 
   private val spark: SparkSession = data.sparkSession
   private val weights: Array[Double] = new Array[Double](k).map(_ => 1.0 / k)
   private val ftsName: String = Identifiable.randomUID("KmeansModel2")
-
-  @BeanProperty var fts: Array[String] = data.columns
 
   import spark.implicits._
 
@@ -49,7 +49,7 @@ case class KmeansModel(data: DataFrame,
   implicit def vec2Seq(vec: Vector) = vec.toArray.toSeq
 
   /**
-    *  判定赝本属于哪个类
+    *  判定样本属于哪个类
     *
     * @param center 聚类中心
     * @return

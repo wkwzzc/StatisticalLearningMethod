@@ -6,17 +6,20 @@ import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
 
+import scala.beans.BeanProperty
 
 /**
   * Created by WZZC on 2019/11/29
   **/
-case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
+case class KnnModel(data: DataFrame) extends Serializable {
 
   private val spark = data.sparkSession
 
 //  import spark.implicits._
   // 使用.rdd的时候不能使用 col
 //  private val sfadsfaggaggsagafasavsa: String = UUID.randomUUID().toString
+
+  @BeanProperty var labelName: String = _
 
   private val ftsName: String = Identifiable.randomUID("KnnModel")
 
@@ -39,8 +42,7 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
       .transform(dataFrame)
   }
 
-  private val
-  kdtrees: Array[TreeNode] = dataTransForm(data)
+  private val kdtrees: Array[TreeNode] = dataTransForm(data)
     .withColumn(ftsName, vec2Seq(col(ftsName)))
     .select(labelName, ftsName)
     .withColumn("partitionIn", spark_partition_id())
@@ -56,7 +58,6 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
     .mapValues(nn => TreeNode.creatKdTree(nn, 0, shapes))
     .values
     .collect()
-
 
   /**
     *
@@ -87,7 +88,8 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
     // 查询的时候遍历每个kdtree，然后取结果集再排序
     val res: Array[(Double, Seq[Double], String)] = kdtrees
       .map(node => {
-        TreeNode.knn(node, predictData, k)
+        TreeNode
+          .knn(node, predictData, k)
           .map(tp2 => (tp2._1, tp2._2.value, tp2._2.label))
       })
       .flatMap(_.toSeq)
@@ -103,6 +105,5 @@ case class KnnModel(data: DataFrame, labelName: String) extends Serializable {
       ._1
     cl
   }
-
 
 }

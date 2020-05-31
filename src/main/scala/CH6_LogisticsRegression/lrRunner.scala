@@ -14,16 +14,16 @@ object lrRunner {
       .master("local[*]")
       .getOrCreate()
 
-
     val iris = spark.read
       .option("header", true)
       .option("inferSchema", true)
       .csv("F:\\DataSource\\iris2.csv")
 
+    val model: LRModel = LRModel(iris)
 
-    val model: LRModel = LRModel(iris, "class")
-
+    model.setLabelColName("class")
     model.setFts(iris.columns.filterNot(_ == "class"))
+    model.fit
 
     model.predict(iris).show(100)
 

@@ -23,16 +23,13 @@ object plaRunner {
       .option("header", true)
       .csv("data/pla.csv")
 
-    val perceptron = PerceptronModel(data, "lable", 0.2)
+    val perceptron = PerceptronModel(data)
 
-    val fit: (DenseVector[Double], Double) = perceptron.fit
+    perceptron.setLabel("lable")
+    perceptron.setLrate(0.2)
+    perceptron.fit
 
-    perceptron.predict(data, fit._1, fit._2).show()
-
-    //  pocketPla
-    val fit2: (DenseVector[Double], Double, Double) =
-      perceptron.pocketPlaFit(100)
-    perceptron.predict(data, fit2._1, fit2._2).show( )
+    perceptron.predict(data).show()
 
     spark.stop()
   }
