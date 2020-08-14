@@ -20,7 +20,7 @@ object GMMModelRunner {
     val dataset: DataFrame = spark.read
       .option("header", true)
       .option("inferSchema", true)
-      .csv("F:\\DataSource\\gmm.txt")
+      .csv("data/gmm.txt")
 
     val fts = Array("f1", "f2", "f3")
 
