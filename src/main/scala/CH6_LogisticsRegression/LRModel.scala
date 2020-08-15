@@ -16,32 +16,33 @@ import org.apache.spark.ml.util.Identifiable
 import scala.beans.BeanProperty
 
 /**
-  * Created by WZZC on 2019/12/9
-  **/
+ * Created by WZZC on 2019/12/9
+ **/
 case class LRModel(data: DataFrame) {
 
   private val spark: SparkSession = data.sparkSession
+
   import spark.implicits._
 
-  @BeanProperty var itr: Int = 40  //迭代次数
-  @BeanProperty var lrate: Double = 0.05  //学习率
+  @BeanProperty var itr: Int = 40 //迭代次数
+  @BeanProperty var lrate: Double = 0.05 //学习率
   @BeanProperty var error: Double = 1e-3 // 初始化差值
   @BeanProperty var fts: Array[String] = _
   @BeanProperty var labelColName: String = _
 
-  var w: densevector[Double] = _
+  private var w: densevector[Double] = _
 
   private val ftsName: String = Identifiable.randomUID("LRModel")
   private val indexedLabel: String = Identifiable.randomUID("indexedLabel")
 
-  private val stringIndexer: StringIndexerModel = new StringIndexer()
-    .setInputCol(labelColName)
+  private def stringIndexer: StringIndexerModel = new StringIndexer()
+    .setInputCol(this.getLabelColName)
     .setOutputCol(indexedLabel)
     .fit(data)
 
   def dataTransForm(df: DataFrame) = {
     new VectorAssembler()
-      .setInputCols(fts)
+      .setInputCols(this.getFts)
       .setOutputCol(ftsName)
       .transform(data)
   }
@@ -77,7 +78,7 @@ case class LRModel(data: DataFrame) {
     var currentLoss: Double = Double.MaxValue //当前损失函数最小值
     var change: Double = error + 0.1 // 梯度下降前后的损失函数的差值
     var i = 0 // 迭代次数
-    var initW: densevector[Double] = densevector.rand[Double](fts.length)
+    var initW: densevector[Double] = densevector.rand[Double](this.getFts.length)
 
     while (change > error & i < itr) {
       //创建一个初始化的随机向量作为初始权值向量
@@ -115,7 +116,9 @@ case class LRModel(data: DataFrame) {
     (initW, currentLoss)
   }
 
-  def fit = { w = fitModel._1 }
+  def fit = {
+    w = fitModel._1
+  }
 
   def predict(df: DataFrame): DataFrame = {
     val labelConverter = new IndexToString()

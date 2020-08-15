@@ -9,6 +9,7 @@ import org.apache.spark.sql.types.DoubleType
 object NaiveBayesRunner {
 
   def main(args: Array[String]): Unit = {
+
     val spark = SparkSession
       .builder()
       .appName(s"${this.getClass.getSimpleName}")
@@ -20,7 +21,7 @@ object NaiveBayesRunner {
     val data = spark.read
       .option("header", true)
       .option("inferSchema", true)
-      .csv("data/naviebayes.csv")
+      .csv("/Users/didi/IdeaProjects/StatisticalLearningMethod/src/main/resources/data/naviebayes.csv")
 
     val model = new StringIndexer()
       .setInputCol("x2")

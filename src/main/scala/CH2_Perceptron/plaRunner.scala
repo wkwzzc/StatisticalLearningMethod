@@ -21,13 +21,14 @@ object plaRunner {
       .format("csv")
       .option("inferSchema", true)
       .option("header", true)
-      .csv("G:\\wk_project\\StatisticalLearningMethod\\src\\main\\resources\\data\\pla.csv")
+       .load("/Users/didi/IdeaProjects/StatisticalLearningMethod/src/main/resources/data/pla.csv")
 
     val perceptron = PerceptronModel(data)
 
-    perceptron.setLabel("lable")
+    perceptron.setLabel("label")
     perceptron.setLrate(0.2)
     perceptron.fit
+
 
     perceptron.predict(data).show()
 

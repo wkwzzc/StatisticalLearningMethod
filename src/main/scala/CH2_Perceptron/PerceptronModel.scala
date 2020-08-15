@@ -14,24 +14,28 @@ import scala.beans.BeanProperty
 import scala.util.Random
 
 /**
-  * Created by WZZC on 2019/11/28
-  **/
-case class PerceptronModel(data: DataFrame,
-                           @BeanProperty var lrate: Double = 0.2)
-    extends Serializable {
+ * Created by WZZC on 2019/11/28
+ **/
+case class PerceptronModel(data: DataFrame)
+  extends Serializable {
 
   private val spark: SparkSession = data.sparkSession
   private val sc = spark.sparkContext
+
   import spark.implicits._
 
-  @BeanProperty var label: String = _
+  @BeanProperty var lrate: Double = 0.2 //学习率
 
-  private val labelCol: Column = new Column(label) with Serializable
+  @BeanProperty var label: String = _ // 分类指标
+
+  @BeanProperty def fts: Array[String] = data.columns.filterNot(_ == this.getLabel) // 数据特征名称
+
+
+  def labelCol: Column = new Column(this.getLabel)
+
   private val featuresName: String = UUID.randomUUID().toString
   private val featuresCol = new Column(featuresName) with Serializable
 
-  // 数据特征名称
-  @BeanProperty var fts: Array[String] = data.columns.filterNot(_ == label)
 
   // 定义判定函数
   def signudf(w: densevector[Double], b: Double) =
@@ -43,19 +47,17 @@ case class PerceptronModel(data: DataFrame,
     })
 
   /**
-    * 数据转换
-    *
-    * @param dataFrame
-    * @return
-    */
+   * 数据转换
+   *
+   * @param dataFrame
+   * @return
+   */
   def dataTransForm(dataFrame: DataFrame) = {
-    val amountVectorAssembler: VectorAssembler = new VectorAssembler()
+    new VectorAssembler()
       .setInputCols(fts)
-      .setOutputCol(featuresName)
-
-    amountVectorAssembler
+      .setOutputCol(this.featuresName)
       .transform(dataFrame)
-      .withColumn(featuresName, udfFuns.vec2Array(featuresCol))
+      .withColumn(this.featuresName, udfFuns.vec2Array(this.featuresCol))
 
   }
 
@@ -63,10 +65,10 @@ case class PerceptronModel(data: DataFrame,
   var b: Double = _
 
   /**
-    * PLA 模型拟合
-    *
-    * @return
-    */
+   * PLA 模型拟合
+   *
+   * @return
+   */
   private def fitModel = {
 
     val dataFeatrus: DataFrame = dataTransForm(this.data)
@@ -113,7 +115,7 @@ case class PerceptronModel(data: DataFrame,
         // 更新 w 和 b
         initW = initW + densevector(
           randy.getAs[Seq[Double]](featuresName).toArray
-        ).map(_ * y * lrate)
+        ).map(_ * y * this.getLrate)
         // b1 = b0 + y
         initb = initb + y * lrate
       }
@@ -129,88 +131,23 @@ case class PerceptronModel(data: DataFrame,
 
 
   /**
-    *  PLA  预测
-    *
-    * @param predictDf
-    * @param w
-    * @param b
-    * @return
-    */
-  def predict(predictDf: DataFrame ) = {
+   * PLA  预测
+   *
+   * @param predictDf
+   * @return
+   */
+  def predict(predictDf: DataFrame) = {
     val transFormed: DataFrame = dataTransForm(predictDf)
     transFormed
-      .withColumn(label, signudf(W, b)(featuresCol))
+      .withColumn(this.getLabel, signudf(W, b)(featuresCol))
       .drop(featuresName)
   }
 
 
-/*
-  /**
-    *  PlA 口袋算法，可以针对线性不可分的数据集构建感知机模型，但是准确率会下降
-    *
-    * @param iter 迭代次数
-    * @return
-    */
-  def pocketPlaFit(iter: Int) = {
-
-    var initW: densevector[Double] = densevector.rand[Double](fts.length) //创建一个初始化的随机向量
-    var initb: Double = Random.nextDouble()
-    var flag = true
-
-    val dataFeatrus: DataFrame = dataTransForm(this.data)
-      .select(labelCol, featuresCol)
-
-    var iteration = 0 //迭代次数
-    val allCount = dataFeatrus.count()
-    var countError = allCount //初始化错判个数（取样本大小）
-    var resW = initW
-    var resB = initb
-
-    while (flag && iteration < iter) {
-
-      val df =
-        dataFeatrus.withColumn("sign", signudf(initW, initb)(featuresCol))
-      val loss = df.where($"sign" =!= labelCol)
-      val count = loss.count().toInt
-
-      /**
-        * 判断新模型的误判次数是否小于前一次的误判次数
-        * 如果小于则更新权值向量和偏置，大于则不更新
-        * */
-      if (count < countError) {
-        countError = count
-        resW = initW
-        resB = initb
-      }
-
-      if (count == 0) {
-        flag = false
-      } else {
-        // w1 = w0 + ny1x1
-        //随机选择一个误判样本
-        val rand = Random.nextInt(loss.count().toInt) + 1
-
-        val randy = loss
-          .withColumn("r", row_number().over(Window.orderBy(labelCol)))
-          .where($"r" === rand)
-          .head()
-
-        val y = randy.getAs[Int](label)
-        initW = initW + densevector(
-          randy.getAs[Seq[Double]](featuresName).toArray
-        ).map(_ * y * lrate)
-        // b1 = b0 + y
-        initb = initb + y * lrate
-
-      }
-      iteration += 1
-
-    }
-
-    (resW, resB, countError.toDouble / allCount)
+  //TODO 单个观测的预测
+  def predict(seq: Seq[Double])={
 
   }
-*/
 
 
 }

@@ -18,7 +18,7 @@ object ID3Ruuner {
 
     val df: Dataset[Row] = spark.read
       .option("header", true)
-      .csv("data/ID3.csv")
+      .csv("/Users/didi/IdeaProjects/StatisticalLearningMethod/src/main/resources/data/ID3.csv")
 
     val model: DecisionTreeModel = DecisionTreeModel(df)
 

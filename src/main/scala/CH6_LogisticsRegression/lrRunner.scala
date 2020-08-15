@@ -17,7 +17,7 @@ object lrRunner {
     val iris = spark.read
       .option("header", true)
       .option("inferSchema", true)
-      .csv("F:\\DataSource\\iris2.csv")
+      .csv("/Users/didi/IdeaProjects/StatisticalLearningMethod/src/main/resources/data/iris2label.csv")
 
     val model: LRModel = LRModel(iris)
 
