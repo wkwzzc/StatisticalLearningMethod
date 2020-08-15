@@ -3,8 +3,8 @@ package CH3_KNearestNeibor
 import org.apache.spark.sql.SparkSession
 
 /**
-  * Created by WZZC on 2019/11/29
-  **/
+ * Created by WZZC on 2019/11/29
+ **/
 object KNNRunner {
 
   def main(args: Array[String]): Unit = {
@@ -18,12 +18,15 @@ object KNNRunner {
     val iris = spark.read
       .option("inferSchema", true)
       .option("header", true)
-      .csv("data/iris.csv")
+      .csv("/Users/didi/IdeaProjects/StatisticalLearningMethod/src/main/resources/data/iris.csv")
 
-    val model: KnnModel = KnnModel(iris)
-    model.setLabelName("class")
+    val model = KnnModel(iris ,"class")
 
-    model.predict(iris, 3).show(100)
+
+    //    println(model.fts.mkString("~"))
+
+    model.predict(iris, 3).show(150)
+
 
     spark.stop()
 
