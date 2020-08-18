@@ -1,4 +1,5 @@
 package CH14_Clustering.Kmeans
+
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
@@ -10,50 +11,50 @@ import org.apache.spark.sql.types.{IntegerType, StructType}
 import scala.beans.BeanProperty
 
 /**
-  * Created by WZZC on 2019/12/17
-  **/
+ * Created by WZZC on 2019/12/17
+ **/
 case class KmeansModel(data: DataFrame) {
 
   @BeanProperty var maxIter: Int = 40
-  @BeanProperty var tol: Double = 1e-4
+  @BeanProperty var tol: Double = 1e-8
   @BeanProperty var k: Int = _
   @BeanProperty var fts: Array[String] = data.columns
 
+
+  // TODO 自定义指定初始聚类中心，可以提高聚类的准确性以及运行性能
+
   private val spark: SparkSession = data.sparkSession
-  private val weights: Array[Double] = new Array[Double](k).map(_ => 1.0 / k)
+
+//  def  weights: Array[Double] = new Array[Double](this.getK).map(_ => 1.0 / this.getK)
   private val ftsName: String = Identifiable.randomUID("KmeansModel2")
 
   import spark.implicits._
 
   /**
-    * 数据特征转换
-    *
-    * @param dataFrame
-    * @return
-    */
+   * 数据特征转换
+   *
+   * @param dataFrame
+   * @return
+   */
   def dataTransForm(dataFrame: DataFrame) = {
     new VectorAssembler()
-      .setInputCols(fts)
+      .setInputCols(this.getFts)
       .setOutputCol(ftsName)
       .transform(dataFrame)
   }
 
-  private val trainDf = dataTransForm(data)
+  private def trainDf = dataTransForm(data)
 
-  // step1 :随机选取 k个初始聚类中心
-  var initk: Array[(Vector, Int)] = trainDf
-    .randomSplit(weights, 1234)
-    .map(df => df.head().getAs[Vector](ftsName))
-    .zip(Range(0, k))
+
 
   implicit def vec2Seq(vec: Vector) = vec.toArray.toSeq
 
   /**
-    *  判定样本属于哪个类
-    *
-    * @param center 聚类中心
-    * @return
-    */
+   * 判定样本属于哪个类
+   *
+   * @param center 聚类中心
+   * @return
+   */
   def cluserUdf(center: Array[(Vector, Int)]) =
     udf((fts: Vector) => {
       center
@@ -70,7 +71,12 @@ case class KmeansModel(data: DataFrame) {
     var i = 0 // 迭代次数
     var cost = 0.0 //初始的代价函数
     var convergence = false //判断收敛，即代价函数变化小于阈值tol
-    // step1 :随机选取 k个初始聚类中心
+
+
+    // step1 :选取k个初始聚类中心（为了方便以及性能，选择前k个样本作为初始聚类中心）
+    var initk: Array[(Vector, Int)] = trainDf.head(k)
+      .map(row => row .getAs[Vector](ftsName))
+      .zip(Range(0, this.getK))
 
     // 结果表的Schema信息
     val schemaOfResult: StructType = data.schema
@@ -80,7 +86,7 @@ case class KmeansModel(data: DataFrame) {
     var resultDF =
       spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schemaOfResult)
 
-    while (i < maxIter && !convergence) {
+    while (i < this.getMaxIter && !convergence) {
 
       val clustered = trainDf
         .withColumn("clust", cluserUdf(initk)(col(ftsName)))
@@ -100,7 +106,9 @@ case class KmeansModel(data: DataFrame) {
         })
 
       val newCost: Double = newItrs.map(_._2).sum
-      convergence = math.abs(newCost - cost) <= tol
+      println(s"第${i} 次迭代 ；新的损失函数为 ${newCost}")
+
+      convergence = math.abs(newCost - cost) <= this.getTol
       cost = newCost
       // 变换初始聚类中心
       initk = newItrs.map(_._1)
