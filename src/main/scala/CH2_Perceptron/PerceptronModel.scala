@@ -31,6 +31,10 @@ case class PerceptronModel(data: DataFrame)
   @BeanProperty def fts: Array[String] = data.columns.filterNot(_ == this.getLabel) // 数据特征名称
 
 
+  private var W: densevector[Double] = _
+  private var b: Double = _
+
+
   def labelCol: Column = new Column(this.getLabel)
 
   private val featuresName: String = UUID.randomUUID().toString
@@ -46,6 +50,7 @@ case class PerceptronModel(data: DataFrame)
       ny
     })
 
+
   /**
    * 数据转换
    *
@@ -58,11 +63,7 @@ case class PerceptronModel(data: DataFrame)
       .setOutputCol(this.featuresName)
       .transform(dataFrame)
       .withColumn(this.featuresName, udfFuns.vec2Array(this.featuresCol))
-
   }
-
-  var W: densevector[Double] = _
-  var b: Double = _
 
   /**
    * PLA 模型拟合
@@ -141,12 +142,6 @@ case class PerceptronModel(data: DataFrame)
     transFormed
       .withColumn(this.getLabel, signudf(W, b)(featuresCol))
       .drop(featuresName)
-  }
-
-
-  //TODO 单个观测的预测
-  def predict(seq: Seq[Double])={
-
   }
 
 

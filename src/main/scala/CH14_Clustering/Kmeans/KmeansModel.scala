@@ -40,7 +40,7 @@ case class KmeansModel(data: DataFrame) {
     new VectorAssembler()
       .setInputCols(this.getFts)
       .setOutputCol(ftsName)
-      .transform(dataFrame)
+      .transform(dataFrame.select(   ))
   }
 
   private def trainDf = dataTransForm(data)

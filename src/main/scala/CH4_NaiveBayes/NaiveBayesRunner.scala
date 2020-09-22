@@ -1,6 +1,6 @@
 package CH4_NaiveBayes
 import org.apache.spark.ml.feature.StringIndexer
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.types.DoubleType
 
 /**
@@ -28,7 +28,7 @@ object NaiveBayesRunner {
       .setOutputCol("indexX2")
       .fit(data)
 
-    val dataFrame = model
+    val dataFrame: DataFrame = model
       .transform(data)
       .withColumn("x1", $"x1".cast(DoubleType))
       .withColumn("y", $"y".cast(DoubleType))

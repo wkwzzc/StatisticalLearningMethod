@@ -116,9 +116,7 @@ case class LRModel(data: DataFrame) {
     (initW, currentLoss)
   }
 
-  def fit = {
-    w = fitModel._1
-  }
+  def fit =  w = fitModel._1
 
   def predict(df: DataFrame): DataFrame = {
     val labelConverter = new IndexToString()

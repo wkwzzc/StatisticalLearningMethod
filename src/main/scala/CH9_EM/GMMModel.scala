@@ -18,8 +18,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{IntegerType, StructType}
 
 /**
-  * Created by WZZC on 2020/5/17
-  **/
+ * Created by WZZC on 2020/5/17
+ **/
 case class GMMModel(data: DataFrame) {
 
   @BeanProperty var maxIter: Int = 40
@@ -49,16 +49,16 @@ case class GMMModel(data: DataFrame) {
     .add("clusterId", IntegerType) //增加一列表示类id的字段
 
   private var clusterDf: DataFrame = _
-//  var clusterDf  = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schemaOfResult)
+  //  var clusterDf  = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schemaOfResult)
 
   private val ftsName: String = Identifiable.randomUID("GMMModel")
 
   /**
-    * 数据特征转换
-    *
-    * @param dataFrame
-    * @return
-    */
+   * 数据特征转换
+   *
+   * @param dataFrame
+   * @return
+   */
   def dataTransForm(dataFrame: DataFrame) = {
     new VectorAssembler()
       .setInputCols(fts)
@@ -67,13 +67,13 @@ case class GMMModel(data: DataFrame) {
   }
 
   /**
-    * 计算多元高斯分布的概率密度函数
-    *
-    * @param vec 待计算样本
-    * @param mus 均值向量
-    * @param covs 协方差矩阵
-    * @return
-    */
+   * 计算多元高斯分布的概率密度函数
+   *
+   * @param vec  待计算样本
+   * @param mus  均值向量
+   * @param covs 协方差矩阵
+   * @return
+   */
   private def pdf(vec: densevector[Double],
                   mus: densevector[Double],
                   covs: denseMatrix[Double]) = {
@@ -93,9 +93,9 @@ case class GMMModel(data: DataFrame) {
   }
 
   /**
-    *
-    * @return
-    */
+   *
+   * @return
+   */
   private def gamakudf(mus: Array[densevector[Double]],
                        covs: Array[denseMatrix[Double]],
                        alphas: Array[Double]) =
@@ -112,25 +112,14 @@ case class GMMModel(data: DataFrame) {
 
       val s = gammak.sum
 
-//      gammak.map(_/s)
+      //      gammak.map(_/s)
 
       new DenseVector(gammak.map(x => (x / s).formatted("%.4f").toDouble))
-//      new DenseVector(gammak)
+      //      new DenseVector(gammak)
 
     })
 
-//  /**
-//    *
-//    * @param sumg
-//    * @return
-//    */
-//  private def gammaudf(sumg: Array[Double]) =
-//    udf((vec: Vector) => {
-//      val gamma = vec.toArray
-//        .zip(sumg)
-//        .map(tp => tp._1 / tp._2)
-//      new DenseVector(gamma)
-//    })
+
 
   private def pdfudf(mus: Array[densevector[Double]],
                      covs: Array[denseMatrix[Double]]) =
@@ -149,10 +138,10 @@ case class GMMModel(data: DataFrame) {
     })
 
   /**
-    *
-    * @param matrix
-    * @param side
-    */
+   *
+   * @param matrix
+   * @param side
+   */
   private def matrixToVectors(matrix: denseMatrix[Double], side: String) = {
 
     val rows: Int = matrix.rows
@@ -191,8 +180,10 @@ case class GMMModel(data: DataFrame) {
       Array.fill(k)(diag(matrixArr))
 
     var i = 0
-//    var cost = 0.0
-//    var convergence = false //判断收敛，即代价函数变化小于阈值tol
+
+    // TODO 添加代价函数的计算
+    //      var cost = 0.0
+    //      var convergence = false //判断收敛，即代价函数变化小于阈值tol
 
     while (i < maxIter) {
 
@@ -274,7 +265,10 @@ case class GMMModel(data: DataFrame) {
 
   }
 
-  //TODO   predict
+  //TODO   predict单样本计算
+  def predict(seq: Seq[Double]) = {}
+
+
   def predict = {
 
     val predictUdf = udf((probability: Vector) => {

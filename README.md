@@ -2,6 +2,9 @@
 #### 前言
 本项目利用Spark手写实现李航《统计学习方法》书中的算法。
 
+该项目目前还存在很多问题，当前只是作为理解其思想的情况下做的实现，所以在算法的迭代计算效率、特征选择等方面存在很多不便之处，后续会做进一步优化
+如有错漏不当之处，欢迎指正。
+
 
 ####  进度
 
@@ -17,3 +20,5 @@ K近邻法|[KnnModel](https://github.com/wkwzzc/StatisticalLearningMethod/tree/m
 提升方法| | |未实现
 EM算法及高斯混合模型|[GMMModel](https://github.com/wkwzzc/StatisticalLearningMethod/tree/master/src/main/scala/CH9_EM) |[spark自编程实现高斯混合模型](https://blog.csdn.net/k_wzzc/article/details/106448479) |已实现
 聚类算法(K-Means)|[KmeansModel](https://github.com/wkwzzc/StatisticalLearningMethod/tree/master/src/main/scala/CH14_Clustering/Kmeans) |[spark自编程实现Kmeans](https://blog.csdn.net/k_wzzc/article/details/84594640) |已实现
+
+
