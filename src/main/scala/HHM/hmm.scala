@@ -1,11 +1,9 @@
 package HHM
 
-import breeze.linalg.{DenseMatrix, DenseVector}
-
+import breeze.linalg.{DenseMatrix, DenseVector, sum}
 import scala.collection.mutable.ListBuffer
 
 /**
- * 参考资料：
  *
  * @param pi                    隐状态初始概率分布
  * @param stateTransitionMatrix 状态转移矩阵
@@ -99,15 +97,17 @@ case class hmm(
     //    βt(i) = ∑ a(i)(j)b(j)(o(t+1))β(t+1)(j)
     for (t <- 1 until o.length reverse) {
       println("betati:" + betati)
+
       val beat = new ListBuffer[Double]()
       for (i <- 0 until n) {
         val aij = stateTransitionMatrix(i, ::).inner
         val bjT = confusionMatrix(::, o(t))
-        beat.append((aij * bjT * betati).toArray.sum)
+        sum (aij * bjT * betati )
+        beat.append(  sum (aij * bjT * betati ))
       }
       betati = DenseVector(beat.toArray)
     }
-    (pi * confusionMatrix(::, o(0)) * betati).toArray.sum
+    sum (pi * confusionMatrix(::, o(0)) * betati)
 
   }
 
