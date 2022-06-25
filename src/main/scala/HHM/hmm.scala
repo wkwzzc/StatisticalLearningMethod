@@ -60,28 +60,26 @@ case class hmm(
    */
   def forwardAlgorithm(o: DenseVector[Int]) = {
 
-    val alphat = new ListBuffer[DenseVector[Double]]()
+    // 计算初值   α1(i)=πi∗b(i)(𝑂(1))
+    var alphati = confusionMatrix(::, o(0)) * pi
 
-    // Step1 计算初值   α(i)=πi∗b(i)(𝑂(1))
-    // 获取第一个观测的概率分布
-    val alpha1i = confusionMatrix(::, o(0)) * pi
-    alphat.append(alpha1i)
-    //α(t)(i)= [∑ α(t-1)(i) a(j)(i)]*b(i)(o(t-1))
-    for (t <- 1 until o.length) { // 观测序列长度T
-      val alphati = new ListBuffer[Double]()
-      for (i <- 0 until n) {
+    //α(t+1)(i)= [∑ α(t)(j) a(j)(i)]*b(i)(o(t+1))
+    for (t <- 1 until o.length) {
 
-        val bit = confusionMatrix(i, o(t))
-        val aji = stateTransitionMatrix(::, i)
-
-        alphati.append((alphat(t - 1) * aji).toArray.map(_ * bit).sum)
-
+      val bit = confusionMatrix(::, o(t))
+      val dlt = new ListBuffer[Double]()
+      for (j <- 0 until n) {
+        val aji = stateTransitionMatrix(::, j)
+        dlt.append(sum(alphati * aji))
       }
-      alphat.append(DenseVector(alphati.toArray))
+
+      alphati = DenseVector(dlt.toArray) * bit
     }
+
     // step3 终止计算(概率)：𝑃(𝑂|𝜆)=∑ a(t)(i)
-    alphat(n - 1).toArray.sum
+    sum(alphati)
   }
+
 
   /**
    * 后向算法
@@ -96,22 +94,20 @@ case class hmm(
 
     //    βt(i) = ∑ a(i)(j)b(j)(o(t+1))β(t+1)(j)
     for (t <- 1 until o.length reverse) {
-      println("betati:" + betati)
 
       val beat = new ListBuffer[Double]()
       for (i <- 0 until n) {
         val aij = stateTransitionMatrix(i, ::).inner
         val bjT = confusionMatrix(::, o(t))
-        sum (aij * bjT * betati )
-        beat.append(  sum (aij * bjT * betati ))
+
+        beat.append(sum(aij * bjT * betati))
       }
       betati = DenseVector(beat.toArray)
     }
-    sum (pi * confusionMatrix(::, o(0)) * betati)
+
+    sum(pi * confusionMatrix(::, o(0)) * betati)
 
   }
-
-
 }
 
 
@@ -119,21 +115,20 @@ object hmm {
 
 
   def main(args: Array[String]): Unit = {
+    val pi = DenseVector(Array(0.2, 0.4, 0.4)) //pi
 
-    val pi = DenseVector(Array(0.2, 0.4, 0.4))
+    val stateTransitionMatrix = DenseMatrix((0.5, 0.2, 0.3), (0.3, 0.5, 0.2), (0.2, 0.3, 0.5)) //A
 
-    val stateTransitionMatrix = DenseMatrix((0.5, 0.2, 0.3), (0.3, 0.5, 0.2), (0.2, 0.3, 0.5))
+    val confusionMatrix = DenseMatrix((0.5, 0.5), (0.4, 0.6), (0.7, 0.3)) //B
 
-    val confusionMatrix = DenseMatrix((0.5, 0.5), (0.4, 0.6), (0.7, 0.3))
-
-    val o = DenseVector(Array(0, 1, 0))
+    val o = DenseVector(Array(0, 1, 0, 1)) //O
 
     val hmmModel = hmm(pi, stateTransitionMatrix, confusionMatrix)
 
-    val doubles = hmmModel.forwardAlgorithm(o)
-    val doubles2 = hmmModel.backwardAlgorithm(o)
-    println(doubles)
-    println(doubles2)
+    val forward = hmmModel.forwardAlgorithm(o)
+    val backward = hmmModel.backwardAlgorithm(o)
+    println(forward)
+    println(backward)
 
   }
 
