@@ -1,4 +1,4 @@
-package HHM
+package CH10_HHM
 
 import breeze.linalg.{DenseMatrix, DenseVector, sum}
 import scala.collection.mutable.ListBuffer
